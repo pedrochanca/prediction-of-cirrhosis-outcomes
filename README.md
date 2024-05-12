@@ -12,3 +12,14 @@ test.csv - the test dataset;
     * your objective is to predict the probability of each of the three Status values, e.g., Status_C, Status_CL, Status_D.
 
 sample_submission.csv - a sample submission file in the correct format
+
+
+# To be tested
+
+- Decision Tree
+- Random Forest
+- XGBBoost
+- Catboost
+- lightGBM
+
+
