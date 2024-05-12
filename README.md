@@ -16,8 +16,8 @@ sample_submission.csv - a sample submission file in the correct format
 
 # To be tested
 
-# Decision Tree
-# Random Forest
-# XGBBoost
-# Catboost
-# lightGBM
+- Decision Tree
+- Random Forest
+- XGBBoost
+- Catboost
+- lightGBM
