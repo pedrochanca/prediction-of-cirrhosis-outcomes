@@ -38,9 +38,9 @@ def load_data(
             "/kaggle/input/playground-series-s3e26/sample_submission.csv"
         )
     else:
-        df_train = pd.read_csv("/datasets/train.csv")
-        df_X_test = pd.read_csv("/datasets/test.csv")
-        df_y_test = pd.read_csv("/datasets/sample_submission.csv")
+        df_train = pd.read_csv("./data/train.csv")
+        df_X_test = pd.read_csv("./data/test.csv")
+        df_y_test = pd.read_csv("./data/sample_submission.csv")
 
     # Transform the raw data
     df_y_train = df_train["Status"]
@@ -99,28 +99,3 @@ def encode_label(y_values: np.array, label_order: list[str]) -> np.array:
 
     # Transform labels
     return label_encoder.transform(y_values)
-
-
-# Evaluation metrics
-# ------------------
-def logloss(y_true_proba: np.array, y_pred_proba: np.array) -> float:
-    """
-    # N: number of rows in the set
-    # M: number of outcomes (i.e., 3)
-    # log: natural logarithm
-    # y_ij: is 1 if row i has the ground truth label j and 0 otherwise
-    # p_ij: is the predicted probability that observation i belongs to class j
-    """
-
-    N, M = np.shape(y_true_proba)
-
-    sum = 0
-    for i in range(N):
-        for j in range(M):
-            y_ij = 1 if y_true_proba[i, j] == max(y_true_proba[i, :]) else 0
-            p_ij = y_pred_proba[i, j]
-            sum += y_ij * np.log(p_ij)
-
-            # print(y_ij, y_true_proba[i, j], max(y_true_proba[i, :]))
-
-    return -(1 / N) * sum
