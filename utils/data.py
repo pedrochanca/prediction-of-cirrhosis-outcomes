@@ -77,25 +77,47 @@ def categorical_to_numerical(
     return pd.concat([df[df.columns.difference(features)], df_transformed], axis=1)
 
 
-def numerical_scaling(
-    x_values: np.array, transformer: callable = None
-) -> tuple[pd.DataFrame, callable]:
-    if transformer is None:
-        # Create transformers for numerical and categorical features
-        transformer = StandardScaler()
-
-        # Fit and transform the data -> The result is a NumPy array
-        transformed_data = transformer.fit_transform(x_values)
-
-    else:
-        transformed_data = transformer.transform(x_values)
-
-    return transformed_data, transformer
-
-
 def encode_label(y_values: np.array, label_order: list[str]) -> np.array:
     label_encoder = LabelEncoder()
     label_encoder.fit(label_order)  # Fits the encoder in the order you specify
 
     # Transform labels
     return label_encoder.transform(y_values)
+
+
+class NumericalScaling:
+    def __init__(self, numerical_indexes: list, categorical_indexes: list):
+        self.numerical_indexes = numerical_indexes
+        self.categorical_indexes = categorical_indexes
+
+    def run(self, X_values: np.array, use_saved_transformer: bool) -> np.array:
+        if not use_saved_transformer:
+            # create transformer
+            self.transformer = StandardScaler()
+
+            # fit the transformer and get scaled data
+            data = self.transformer.fit_transform(X_values[:, self.numerical_indexes])
+
+        else:
+            # scale data using existing transformer
+            data = self.transformer.transform(X_values[:, self.numerical_indexes])
+
+        X_values_ = np.concatenate(
+            (data, X_values[:, self.categorical_indexes]), axis=1
+        )
+
+        return X_values_
+
+
+def get_numerical_and_categorical_indexes(
+    df_X: pd.DataFrame, numerical_features: list[str]
+) -> list[int]:
+    """ """
+
+    n_features = df_X.shape[1]
+
+    numerical_indexes = [df_X.columns.get_loc(column) for column in numerical_features]
+
+    categorical_indexes = list(set(np.arange(n_features)) - set(numerical_indexes))
+
+    return numerical_indexes, categorical_indexes

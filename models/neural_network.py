@@ -4,8 +4,8 @@ import numpy as np
 
 
 class SoftmaxRegressionNN:
-    def __init__(self, model: kr.models.Sequential, **kwargs):
-        self.model = self.compile(model, **kwargs)
+    def __init__(self, **kwargs):
+        self.model = self.compile(**kwargs)
 
     def __getattr__(self, attr):
         """
@@ -35,7 +35,9 @@ class SoftmaxRegressionNN:
         else:
             return orig_attr
 
-    def compile(self, model: kr.models.Sequential, **kwargs) -> callable:
+    def compile(self, **kwargs) -> callable:
+        model = kwargs["sequential"]
+
         allowed_kwargs = ["learning_rate"]
         kwargs_ = {k: v for k, v in kwargs.items() if k in allowed_kwargs}
 

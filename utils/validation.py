@@ -5,7 +5,12 @@ from sklearn.metrics import log_loss, accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import StratifiedKFold, KFold
 
-import utils.data_manipulation as dm
+import itertools
+
+from utils.data import (
+    NumericalScaling,
+    get_numerical_and_categorical_indexes,
+)
 
 
 class CrossValidation:
@@ -23,49 +28,25 @@ class CrossValidation:
         self.n_features = df_X.shape[1]
         self.numerical_scale = numerical_scale
 
-        if numerical_features is not None:
-            self.numerical_indexes = self.get_numerical_indexes(
-                df_X, numerical_features
+        if numerical_scale and numerical_features is not None:
+            numerical_indexes, categorical_indexes = (
+                get_numerical_and_categorical_indexes(df_X, numerical_features)
             )
-            self.categorical_indexes = self.get_categorical_indexes()
 
-    def get_numerical_indexes(
-        self, df_X: pd.DataFrame, num_features: list
-    ) -> list[int]:
-        """ """
-        if self.numerical_scale:
-            return [df_X.columns.get_loc(column) for column in num_features]
-        else:
-            return []
+            self.numerical_scaling = NumericalScaling(
+                numerical_indexes, categorical_indexes
+            )
 
-    def get_categorical_indexes(self) -> list[int]:
-        """ """
-        if self.numerical_scale:
-            return list(set(np.arange(self.n_features)) - set(self.numerical_indexes))
-        else:
-            return []
-
-    def check_numerical_scaling(
+    def compute_numerical_scaling(
         self, X_train: np.array, X_validation: np.array
     ) -> tuple[np.array, np.array]:
         """ """
 
-        if self.numerical_scale:
-            transformed_data, numerical_transformer = dm.numerical_scaling(
-                X_train[:, self.numerical_indexes], None
-            )
+        X_train = self.numerical_scaling.run(X_train, use_saved_transformer=False)
 
-            X_train = np.concatenate(
-                (transformed_data, X_train[:, self.categorical_indexes]), axis=1
-            )
-
-            transformed_data, _ = dm.numerical_scaling(
-                X_validation[:, self.numerical_indexes], numerical_transformer
-            )
-
-            X_validation = np.concatenate(
-                (transformed_data, X_validation[:, self.categorical_indexes]), axis=1
-            )
+        X_validation = self.numerical_scaling.run(
+            X_validation, use_saved_transformer=True
+        )
 
         return X_train, X_validation
 
@@ -78,7 +59,10 @@ class CrossValidation:
         X_train, X_validation = self.X[train_index], self.X[validation_index]
         y_train, y_validation = self.y[train_index], self.y[validation_index]
 
-        X_train, X_validation = self.check_numerical_scaling(X_train, X_validation)
+        if self.numerical_scale:
+            X_train, X_validation = self.compute_numerical_scaling(
+                X_train, X_validation
+            )
 
         # fit model
         self.model.fit(X_train, y_train, **self.kwargs)
@@ -95,7 +79,7 @@ class CrossValidation:
     def run(
         self,
         model: callable,
-        split_method: str = "standard",
+        split_method: str,
         shuffle: bool = False,
         random_state: float = None,
         n_splits: int = 5,
@@ -150,6 +134,82 @@ class CrossValidation:
         self.history["avg_log_loss"] = np.mean(self.history["log_loss"])
 
         return self.history
+
+
+def grid_search_cv(
+    df_X: pd.DataFrame,
+    df_y: pd.DataFrame,
+    model: object,
+    grid_search_parameters: dict,
+    cross_validation_split_method: str,
+    numerical_scaling: bool,
+    numerical_features: list,
+    shuffle: bool,
+    random_state: float,
+    verbose: bool = True,
+) -> tuple[dict, float, dict, list]:
+    # Create a list of keys and a list of lists of values
+    keys = list(grid_search_parameters.keys())
+    values = list(grid_search_parameters.values())
+
+    # Generate all combinations of the parameter values
+    combinations = itertools.product(*values)
+
+    # initiate list to store each combination of parameters tested
+    parameters = []
+
+    # initiate list to store evaluation metrics for each combination
+    history = []
+
+    # initiate variable to save index for the optimal set of parameters
+    optimal_index = -1
+
+    # initiate variable to save the lowest seen log loss
+    min_log_loss = 1000
+
+    for i, c in enumerate(combinations):
+        kwargs = dict(zip(keys, c))
+
+        model_ = model(**kwargs)
+
+        cv = CrossValidation(
+            df_X,
+            df_y["Status"],
+            numerical_scale=numerical_scaling,
+            numerical_features=numerical_features,
+        )
+
+        h = cv.run(
+            model_,
+            cross_validation_split_method,
+            shuffle=shuffle,
+            random_state=random_state,
+            **kwargs,
+        )
+
+        parameters.append(kwargs)
+        history.append(h)
+
+        # check if current combination > optimal one
+        if history[i]["avg_log_loss"] < min_log_loss:
+            min_log_loss = history[i]["avg_log_loss"]
+            optimal_index = i
+
+        if verbose:
+            print(kwargs)
+
+            print(
+                "[Validation Set] Average Accuracy: %.2f" % (h["avg_accuracy"] * 100),
+                "%",
+            )
+            print("[Validation Set] Average Log-loss: %.2f \n" % h["avg_log_loss"])
+
+    return (
+        parameters[optimal_index],
+        history[optimal_index]["avg_log_loss"],
+        parameters,
+        history,
+    )
 
 
 # Evaluation metrics
