@@ -5,7 +5,8 @@ import numpy as np
 
 class SoftmaxRegressionNN:
     def __init__(self, **kwargs):
-        self.model = self.compile(**kwargs)
+        self.kwargs = kwargs
+        self.model = self.compile()
 
     def __getattr__(self, attr):
         """
@@ -15,7 +16,7 @@ class SoftmaxRegressionNN:
         orig_attr = getattr(self.model, attr)
         if callable(orig_attr):
 
-            def hooked(*args, **kwargs):
+            def hooked(*args):
                 # Modify args or kwargs here before passing them to the original function
                 # For example, let's filter out kwargs for 'fit' method specifically
                 if attr == "fit":
@@ -26,7 +27,9 @@ class SoftmaxRegressionNN:
                         # "callbacks",
                         # "validation_data",
                     ]
-                    kwargs_ = {k: v for k, v in kwargs.items() if k in allowed_kwargs}
+                    kwargs_ = {
+                        k: v for k, v in self.kwargs.items() if k in allowed_kwargs
+                    }
 
                 # Now call the original attribute with potentially modified arguments
                 return orig_attr(*args, **kwargs_)
@@ -35,11 +38,11 @@ class SoftmaxRegressionNN:
         else:
             return orig_attr
 
-    def compile(self, **kwargs) -> callable:
-        model = kwargs["sequential"]
+    def compile(self) -> callable:
+        model = self.kwargs["sequential"]
 
         allowed_kwargs = ["learning_rate"]
-        kwargs_ = {k: v for k, v in kwargs.items() if k in allowed_kwargs}
+        kwargs_ = {k: v for k, v in self.kwargs.items() if k in allowed_kwargs}
 
         model.compile(
             loss=kr.losses.SparseCategoricalCrossentropy(from_logits=True),
@@ -51,13 +54,13 @@ class SoftmaxRegressionNN:
 
         return model
 
-    def predict(self, X: np.array, **kwargs) -> tuple[np.array, np.array]:
+    def predict(self, X_values: np.array) -> tuple[np.array, np.array]:
         allowed_kwargs = [
             "verbose",
         ]
-        kwargs_ = {k: v for k, v in kwargs.items() if k in allowed_kwargs}
+        kwargs_ = {k: v for k, v in self.kwargs.items() if k in allowed_kwargs}
 
-        prediction = self.model.predict(X, **kwargs_)
+        prediction = self.model.predict(X_values, **kwargs_)
         self.y_pred_proba = tf.nn.softmax(prediction).numpy()
         self.y_pred = np.argmax(self.y_pred_proba, axis=1)
 

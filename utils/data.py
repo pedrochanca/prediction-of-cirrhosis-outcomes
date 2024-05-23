@@ -13,7 +13,7 @@ from sklearn.compose import ColumnTransformer
 # Load Data
 # ---------
 def load_data(
-    KAGGLE: bool,
+    kaggle: bool, preprocess: bool
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """
     This function loads the train and test sets.
@@ -31,23 +31,26 @@ def load_data(
     # You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session
     """
 
-    if KAGGLE:
-        df_train = pd.read_csv("/kaggle/input/playground-series-s3e26/train.csv")
-        df_X_test = pd.read_csv("/kaggle/input/playground-series-s3e26/test.csv")
-        df_y_test = pd.read_csv(
-            "/kaggle/input/playground-series-s3e26/sample_submission.csv"
+    if kaggle:
+        train = pd.read_csv("/kaggle/input/playground-series-s3e26/train.csv")
+        test = pd.read_csv("/kaggle/input/playground-series-s3e26/test.csv")
+        original = pd.read_csv(
+            "/kaggle/input/cirrhosis-patient-survival-prediction/cirrhosis.csv"
         )
+        sub = pd.read_csv("/kaggle/input/playground-series-s3e26/sample_submission.csv")
     else:
-        df_train = pd.read_csv("./data/train.csv")
-        df_X_test = pd.read_csv("./data/test.csv")
-        df_y_test = pd.read_csv("./data/sample_submission.csv")
+        train = pd.read_csv("./data/train.csv")
+        test = pd.read_csv("./data/test.csv")
+        original = pd.read_csv("./data/cirrhosis.csv")
+        sub = pd.read_csv("./data/sample_submission.csv")
 
     # Transform the raw data
-    df_y_train = df_train["Status"]
-    df_X_train = df_train.drop(["Status", "id"], axis=1)
-    df_X_test = df_X_test.drop("id", axis=1)
+    if preprocess:
+        y_train = train["Status"]
+        x_train = train.drop(["Status", "id"], axis=1)
+        x_test = test.drop("id", axis=1)
 
-    return df_X_train, df_X_test, df_y_train, df_y_test
+    return x_train, x_test, y_train, sub
 
 
 # Data Transformation

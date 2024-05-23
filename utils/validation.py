@@ -65,10 +65,10 @@ class CrossValidation:
             )
 
         # fit model
-        self.model.fit(X_train, y_train, **self.kwargs)
+        self.model.fit(X_train, y_train)
 
         # predict label
-        y_pred, y_pred_proba = self.model.predict(X_validation, **self.kwargs)
+        y_pred, y_pred_proba = self.model.predict(X_validation)
 
         # predict evaluation metrics
         acc = accuracy_score(y_validation, y_pred)
