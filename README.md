@@ -22,9 +22,12 @@ Note by organzier: Feel free to use the original dataset as part of this competi
 - sample_submission.csv : a sample submission file in the correct format.
 
 
-#### **Algorithms tested so far**
+#### **Models Tested**
 
-- CatBoostClassifier
-- Softmax Neural Network
+- CatBoost Classifier
+- Neural Network (with Softmax)
 
-- *to be tested: lightGBM, XGBBoost*
+#### **Future Suggestions**
+
+- Feature Engineering
+- Test other models, such as: lightGBM, XGBBoost
